@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "ubuntu-shell": {
+      "command": "/home/jeel/tools/node/bin/node",
+      "args": [
+        "/home/jeel/Desktop/demofolder/dist/server.js"
+      ]
+    }
+  }
+}

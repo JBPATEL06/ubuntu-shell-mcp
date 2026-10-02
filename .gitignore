@@ -1,0 +1,6 @@
+node_modules/
+dist/
+jobs/
+audit.log
+*.log
+.DS_Store
