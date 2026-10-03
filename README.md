@@ -184,7 +184,30 @@ flutter run -d linux
 
 ---
 
-## Building & Testing
+## Installation & Setup
+
+### Automated 1-Command Install (Recommended)
+To compile and install both the MCP server and Flutter dashboard standalone into your system without needing root/sudo:
+```bash
+./install.sh
+```
+This automatically:
+1. Compiles the native server executable (`ubuntu-shell-mcp`)
+2. Builds the release Flutter desktop app (`ubuntu_shell_app`)
+3. Installs standalone files to `~/.local/share/ubuntu-shell-app/`
+4. Creates global user commands in `~/.local/bin/` (`ubuntu-shell-mcp` & `ubuntu-shell-app`)
+5. Adds a native desktop launcher in Ubuntu's Applications grid
+
+> **Standalone:** Once installed, the application runs 100% independently. You can safely move or delete the cloned repository!
+
+To uninstall anytime:
+```bash
+./uninstall.sh
+```
+
+---
+
+## Building & Testing Manually
 
 ### Prerequisites
 - Dart SDK `>= 3.5.0`
