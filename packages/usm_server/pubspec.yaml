@@ -1,0 +1,15 @@
+name: usm_server
+description: Headless stdio MCP server speaking JSON-RPC for ubuntu-shell-mcp.
+version: 1.0.0
+publish_to: 'none'
+resolution: workspace
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  usm_core:
+    path: ../usm_core
+
+dev_dependencies:
+  test: ^1.25.0

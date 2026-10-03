@@ -1,0 +1,7 @@
+name: ubuntu_shell_mcp_workspace
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+workspace:
+  - packages/usm_core
+  - packages/usm_server

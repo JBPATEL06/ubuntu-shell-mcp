@@ -1,6 +1,24 @@
-node_modules/
-dist/
-jobs/
+# Dart & Pub
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/
+
+# Executables & Binaries
+packages/usm_server/ubuntu-shell-mcp
+ubuntu-shell-mcp
+*.exe
+
+# Logs & Audit
 audit.log
 *.log
+
+# Temp & OS
 .DS_Store
+*.swp
+*.pyc
+
+# IDEs
+.idea/
+*.iml

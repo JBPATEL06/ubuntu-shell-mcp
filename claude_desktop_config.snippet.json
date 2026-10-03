@@ -1,10 +1,7 @@
 {
   "mcpServers": {
     "ubuntu-shell": {
-      "command": "/home/jeel/tools/node/bin/node",
-      "args": [
-        "/home/jeel/Desktop/demofolder/dist/server.js"
-      ]
+      "command": "/home/jeel/Desktop/Projects/Local_Mcp/ubuntu-shell-mcp/packages/usm_server/ubuntu-shell-mcp"
     }
   }
 }
