@@ -299,4 +299,57 @@ class PathResolver {
 
     return realPath;
   }
+
+  /// Discovers the path to the compiled ubuntu-shell-mcp executable.
+  /// Checks candidate locations in order:
+  /// 1. Directory of current executable (Platform.resolvedExecutable)
+  /// 2. User local bin: $HOME/.local/bin/ubuntu-shell-mcp
+  /// 3. System paths: /usr/local/bin/ubuntu-shell-mcp, /usr/bin/ubuntu-shell-mcp
+  /// 4. Current working directory or subpaths (for dev / testing)
+  /// 5. Common project paths in home
+  /// Returns the path to the binary if found, or the default target install path ($HOME/.local/bin/ubuntu-shell-mcp).
+  String resolveServerBinaryPath({String? workingDir}) {
+    final candidates = <String>[];
+
+    // 1. Next to current running app executable (for bundled release distributions)
+    try {
+      final appExecutable = Platform.resolvedExecutable;
+      if (appExecutable.isNotEmpty) {
+        final appDir = p.dirname(appExecutable);
+        candidates.add(p.join(appDir, 'ubuntu-shell-mcp'));
+      }
+    } catch (_) {}
+
+    // 2. User binary path
+    candidates.add(p.join(homeDirectory, '.local', 'bin', 'ubuntu-shell-mcp'));
+
+    // 3. System binary paths
+    candidates.add('/usr/local/bin/ubuntu-shell-mcp');
+    candidates.add('/usr/bin/ubuntu-shell-mcp');
+
+    // 4. Current working directory or subpaths (for dev / testing)
+    try {
+      final cwd = workingDir ?? Directory.current.path;
+      candidates.add(p.join(cwd, 'packages', 'usm_server', 'ubuntu-shell-mcp'));
+      candidates.add(p.join(cwd, 'ubuntu-shell-mcp'));
+    } catch (_) {}
+
+    // 5. Common project paths in home
+    candidates.add(p.join(homeDirectory, 'Desktop', 'Projects', 'Local_Mcp', 'ubuntu-shell-mcp', 'packages', 'usm_server', 'ubuntu-shell-mcp'));
+    candidates.add(p.join(homeDirectory, 'ubuntu-shell-mcp-dart', 'packages', 'usm_server', 'ubuntu-shell-mcp'));
+
+    for (final candidate in candidates) {
+      if (File(candidate).existsSync()) {
+        return candidate;
+      }
+    }
+
+    // Default fallback is the standard user binary location
+    return p.join(homeDirectory, '.local', 'bin', 'ubuntu-shell-mcp');
+  }
+
+  /// Whether the server binary exists at the resolved path.
+  bool isServerBinaryInstalled({String? workingDir}) {
+    return File(resolveServerBinaryPath(workingDir: workingDir)).existsSync();
+  }
 }

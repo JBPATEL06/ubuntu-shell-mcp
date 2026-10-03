@@ -97,5 +97,28 @@ void main() {
       expect(resolver.cooldownDurationSeconds, equals(60));
       expect(resolver.maxDialogsPerMinute, equals(2));
     });
+
+    test('dynamically resolves server binary path and detects installed state', () {
+      final fakeHomeDir = Directory.systemTemp.createTempSync('bin_discovery_home');
+      addTearDown(() {
+        if (fakeHomeDir.existsSync()) fakeHomeDir.deleteSync(recursive: true);
+      });
+      final fakeHome = fakeHomeDir.path;
+      final resolver = PathResolver({'HOME': fakeHome});
+
+      // Initially no binary exists
+      expect(
+        resolver.resolveServerBinaryPath(workingDir: fakeHome),
+        equals('$fakeHome/.local/bin/ubuntu-shell-mcp'),
+      );
+      expect(resolver.isServerBinaryInstalled(workingDir: fakeHome), isFalse);
+
+      // Create fake binary in ~/.local/bin
+      final localBinDir = Directory('$fakeHome/.local/bin')..createSync(recursive: true);
+      final binaryFile = File('${localBinDir.path}/ubuntu-shell-mcp')..writeAsStringSync('#!/bin/sh\n');
+
+      expect(resolver.resolveServerBinaryPath(workingDir: fakeHome), equals(binaryFile.path));
+      expect(resolver.isServerBinaryInstalled(workingDir: fakeHome), isTrue);
+    });
   });
 }

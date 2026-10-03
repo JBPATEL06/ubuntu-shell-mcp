@@ -301,6 +301,8 @@ class ConnectAiView extends StatefulWidget {
 class _ConnectAiViewState extends State<ConnectAiView> {
   int _clientTab = 0; // 0 = Claude Desktop, 1 = Cursor IDE, 2 = Terminal Test
   bool _isConfiguredInClaude = false;
+  bool _isConfiguring = false;
+  bool _isBinaryInstalled = false;
   String _serverBinaryPath = '';
   String _claudeConfigFile = '';
 
@@ -312,7 +314,8 @@ class _ConnectAiViewState extends State<ConnectAiView> {
 
   Future<void> _checkSetup() async {
     final home = widget.pathResolver.homeDirectory;
-    _serverBinaryPath = '$home/ubuntu-shell-mcp-dart/packages/usm_server/ubuntu-shell-mcp';
+    _serverBinaryPath = widget.pathResolver.resolveServerBinaryPath();
+    _isBinaryInstalled = widget.pathResolver.isServerBinaryInstalled();
     _claudeConfigFile = '$home/.config/Claude/claude_desktop_config.json';
 
     final file = File(_claudeConfigFile);
@@ -321,10 +324,71 @@ class _ConnectAiViewState extends State<ConnectAiView> {
         final content = await file.readAsString();
         if (content.contains('ubuntu-shell-mcp')) {
           _isConfiguredInClaude = true;
+        } else {
+          _isConfiguredInClaude = false;
         }
       } catch (_) {}
+    } else {
+      _isConfiguredInClaude = false;
     }
     if (mounted) setState(() {});
+  }
+
+  Future<void> _autoConfigureClaude() async {
+    setState(() => _isConfiguring = true);
+    try {
+      final file = File(_claudeConfigFile);
+      Map<String, dynamic> config = {};
+      if (await file.exists()) {
+        final text = await file.readAsString();
+        if (text.trim().isNotEmpty) {
+          try {
+            config = jsonDecode(text) as Map<String, dynamic>;
+          } catch (_) {
+            config = {};
+          }
+        }
+      } else {
+        await file.parent.create(recursive: true);
+      }
+
+      final mcpServers = (config['mcpServers'] as Map<String, dynamic>?) != null
+          ? Map<String, dynamic>.from(config['mcpServers'] as Map)
+          : <String, dynamic>{};
+
+      mcpServers['ubuntu-shell-mcp'] = {
+        'command': _serverBinaryPath,
+      };
+      config['mcpServers'] = mcpServers;
+
+      const encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString('${encoder.convert(config)}\n');
+
+      await _checkSetup();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Configured in Claude Desktop! Please quit and restart Claude Desktop.'),
+            backgroundColor: Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update config: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isConfiguring = false);
+    }
   }
 
   void _copy(String text, String message) {
@@ -388,8 +452,8 @@ class _ConnectAiViewState extends State<ConnectAiView> {
                       const SizedBox(height: 2),
                       Text(
                         _isConfiguredInClaude
-                            ? 'Server entry detected in ~/.config/Claude/claude_desktop_config.json'
-                            : 'Follow the steps below to register this server in your Claude config file.',
+                            ? 'Server entry registered in ~/.config/Claude/claude_desktop_config.json'
+                            : 'Click "1-Click Setup" below to automatically register with Claude Desktop.',
                         style: const TextStyle(fontSize: 12, color: Color(0xFF909098)),
                       ),
                     ],
@@ -426,6 +490,105 @@ class _ConnectAiViewState extends State<ConnectAiView> {
           const SizedBox(height: 16),
 
           if (_clientTab == 0) ...[
+            if (!_isBinaryInstalled) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2E1C0C),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFB45309)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFFBBF24), size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Server Binary Not Yet Found',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFFDE68A)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'The server binary was not detected at $_serverBinaryPath. Ensure ubuntu-shell-mcp is placed in ~/.local/bin or compiled.',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFD4D4D8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // 1-Click Quick Setup Card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF334155), width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, color: Color(0xFF38BDF8), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        '1-Click Automatic Setup (Recommended for Non-Techies)',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Automatically register this MCP server in Claude Desktop config without editing JSON files manually.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _isConfiguring ? null : _autoConfigureClaude,
+                        icon: _isConfiguring
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : Icon(_isConfiguredInClaude ? Icons.check_circle_rounded : Icons.flash_on_rounded, size: 16),
+                        label: Text(_isConfiguredInClaude ? 'Re-sync Claude Desktop Config' : 'Configure Claude Desktop (1-Click)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isConfiguredInClaude ? const Color(0xFF16A34A) : const Color(0xFFE95420),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isConfiguredInClaude ? '✓ Configured & ready' : 'No manual copy/paste needed',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _isConfiguredInClaude ? const Color(0xFF4ADE80) : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            const Text(
+              'Or Configure Manually (Step-by-Step):',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFD4D4D8)),
+            ),
+            const SizedBox(height: 10),
+
             _buildStep(
               number: '1',
               title: 'Open your Claude configuration file',
@@ -627,8 +790,7 @@ class _DashboardViewState extends State<DashboardView> {
   Future<void> _loadVitals() async {
     setState(() => _isLoading = true);
     try {
-      final home = widget.pathResolver.homeDirectory;
-      final serverPath = '$home/ubuntu-shell-mcp-dart/packages/usm_server/ubuntu-shell-mcp';
+      final serverPath = widget.pathResolver.resolveServerBinaryPath();
       final file = File(serverPath);
       if (await file.exists()) {
         _binaryStat = await file.stat();

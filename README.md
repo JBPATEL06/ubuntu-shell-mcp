@@ -212,7 +212,7 @@ flutter analyze app/
 dart test packages/usm_core packages/usm_server
 
 # Run Flutter widget tests
-flutter test app/
+cd app && flutter test && cd ..
 ```
 
 ### Compile Server Binary
@@ -229,19 +229,35 @@ dart compile exe packages/usm_server/bin/main.dart -o packages/usm_server/ubuntu
 
 ## Claude Desktop Configuration
 
-Add the server to your Claude Desktop configuration (`~/.config/Claude/claude_desktop_config.json`):
+### Option 1: 1-Click Automatic Setup (Recommended for Non-Techies)
+If using the companion Flutter app:
+1. Open the app (`cd app && flutter run -d linux` or run the packaged application).
+2. Click the **Connect AI Client** tab in the sidebar.
+3. Click the **"Configure Claude Desktop (1-Click)"** button.
+4. The app automatically locates the binary, updates `~/.config/Claude/claude_desktop_config.json`, and verifies the setup with zero manual JSON editing required.
+
+### Option 2: Manual Configuration
+Alternatively, add the server directly to `~/.config/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "ubuntu-shell": {
-      "command": "/home/jeel/Desktop/Projects/Local_Mcp/ubuntu-shell-mcp/packages/usm_server/ubuntu-shell-mcp"
+    "ubuntu-shell-mcp": {
+      "command": "/PATH/TO/ubuntu-shell-mcp"
     }
   }
 }
 ```
 
-Restart Claude Desktop:
+> **Tip:** You can install the server binary to standard user path `~/.local/bin`:
+> ```bash
+> mkdir -p ~/.local/bin
+> cp packages/usm_server/ubuntu-shell-mcp ~/.local/bin/ubuntu-shell-mcp
+> ```
+> And configure `"command": "/home/<USERNAME>/.local/bin/ubuntu-shell-mcp"` (replace `<USERNAME>` with your Linux username).
+
+### Restart Claude Desktop
+Restart Claude Desktop to load the new server:
 ```bash
 pkill -f claude-desktop
 claude-desktop &
