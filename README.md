@@ -1,3 +1,235 @@
+### Download a prebuilt Linux release
+
+You do **not** need to clone this repository or run `install.sh` to use a published
+release. The prebuilt archive contains both the desktop dashboard and the MCP server.
+These instructions are for 64-bit Ubuntu/Linux (`x86_64`).
+
+1. Download `ubuntu-shell-mcp-linux-x64.tar.gz` from the
+   [GitHub Releases page](https://github.com/JBPATEL06/ubuntu-shell-mcp/releases).
+   For example, download the latest release in a terminal with:
+
+   ```bash
+   mkdir -p ~/Applications ~/Downloads
+   curl -L "https://github.com/JBPATEL06/ubuntu-shell-mcp/releases/latest/download/ubuntu-shell-mcp-linux-x64.tar.gz" \
+     -o ~/Downloads/ubuntu-shell-mcp-linux-x64.tar.gz
+   ```
+
+   Or download the `.tar.gz` asset from the Releases page using your browser.
+
+2. Extract the archive into `~/Applications`:
+
+   ```bash
+   tar -xzf ~/Downloads/ubuntu-shell-mcp-linux-x64.tar.gz -C ~/Applications
+   ```
+
+   This creates `~/Applications/ubuntu-shell-mcp-linux-x64/`.
+
+3. Start the dashboard:
+
+   ```bash
+   ~/Applications/ubuntu-shell-mcp-linux-x64/ubuntu_shell_app
+   ```
+
+   Keep the extracted folder in place. The dashboard starts the `ubuntu-shell-mcp`
+   executable bundled beside it; do not move or delete that server file.
+
+4. In the dashboard, open **Connect AI** and click **Configure Claude Desktop
+   (1-Click)**. This registers the bundled server in Claude Desktop's configuration.
+   If Ubuntu reports that Zenity is missing when a command needs approval, install it:
+
+   ```bash
+   sudo apt install zenity
+   ```
+
+5. Fully quit and restart Claude Desktop so it loads the new MCP server configuration.
+   On the next connection, Claude Desktop should show the Ubuntu Shell MCP tools.
+
+#### Optional: add Ubuntu Applications-menu shortcut
+
+To launch the dashboard with one click from Ubuntu's Applications menu, create a
+desktop entry. Run this after extracting the release to the path above:
+
+```bash
+APP_PATH="$HOME/Applications/ubuntu-shell-mcp-linux-x64/ubuntu_shell_app"
+mkdir -p "$HOME/.local/share/applications"
+cat > "$HOME/.local/share/applications/ubuntu-shell-mcp.desktop" <<EOF
+[Desktop Entry]
+Name=Ubuntu Shell MCP
+Comment=Ubuntu Shell MCP Dashboard
+Exec="$APP_PATH"
+Terminal=false
+Type=Application
+Categories=Utility;Development;
+EOF
+chmod +x "$HOME/.local/share/applications/ubuntu-shell-mcp.desktop"
+```
+
+Open the Applications overview, search for **Ubuntu Shell MCP**, and launch it.
+The shortcut assumes you keep the release in `~/Applications/ubuntu-shell-mcp-linux-x64`;
+if you move the folder, update the `APP_PATH` and recreate the desktop entry.
+
+To remove this shortcut later:
+
+```bash
+rm "$HOME/.local/share/applications/ubuntu-shell-mcp.desktop"
+```
+
+If you prefer building from source and installing commands system-wide for your user,
+follow the source installation steps below instead. The release archive does not need
+the source repository or `install.sh`.
+
+New release archives are built and attached to GitHub Releases when a `v*` version
+tag is pushed.
+
+---
+
+## Installation & Setup
+
+### Automated source install
+
+Use this option if you cloned/downloaded the source repository and want to build and
+install the app and server locally. If you downloaded a prebuilt release archive,
+follow [Download a prebuilt Linux release](#download-a-prebuilt-linux-release)
+instead; you do not need the source repository or this script. To compile and install
+both the MCP server and Flutter dashboard for your user without needing root/sudo:
+
+```bash
+./install.sh
+```
+
+This automatically:
+1. Compiles the native server executable (`ubuntu-shell-mcp`)
+2. Builds the release Flutter desktop app (`ubuntu_shell_app`)
+3. Installs standalone files to `~/.local/share/ubuntu-shell-app/`
+4. Creates global user commands in `~/.local/bin/` (`ubuntu-shell-mcp` & `ubuntu-shell-app`)
+5. Adds a native desktop launcher in Ubuntu's Applications grid
+
+> **Standalone:** Once installed, the application runs 100% independently. You can safely move or delete the cloned repository!
+
+To uninstall anytime:
+```bash
+./uninstall.sh
+```
+
+---
+
+## Building & Testing Manually
+
+### Prerequisites
+- Dart SDK `>= 3.5.0`
+- Flutter SDK (for companion app)
+- `zenity` (native Ubuntu package)
+
+### Install Dependencies
+```bash
+dart pub get
+```
+
+### Run Static Analysis
+```bash
+# Analyze core and server packages
+dart analyze packages/usm_core packages/usm_server
+
+# Analyze companion app
+flutter pub get --directory=app
+flutter analyze app/
+```
+
+### Run Unit & Integration Tests
+```bash
+# Run 136 core and server tests
+dart test packages/usm_core packages/usm_server
+
+# Run Flutter widget tests
+cd app && flutter test && cd ..
+```
+
+### Compile Server Binary
+```bash
+dart compile exe packages/usm_server/bin/main.dart -o packages/usm_server/ubuntu-shell-mcp
+```
+
+### Run Stripped-Environment Regression Test
+```bash
+./test/integration/stripped_env.sh
+```
+
+---
+
+## Claude Desktop Configuration
+
+### Option 1: 1-Click Automatic Setup (Recommended for Non-Techies)
+If using the companion Flutter app:
+1. Open the dashboard from the Applications menu or run the packaged application.
+2. Click the **Connect AI Client** tab in the sidebar.
+3. Click the **"Configure Claude Desktop (1-Click)"** button.
+4. The app registers the detected server executable in
+   `~/.config/Claude/claude_desktop_config.json`; no manual JSON editing is needed.
+   For a downloaded release, keep the dashboard and `ubuntu-shell-mcp` together in
+   their extracted folder so the dashboard can locate the server.
+5. Fully quit and restart Claude Desktop to load the new configuration.
+
+### Option 2: Manual Configuration
+Alternatively, add the server directly to `~/.config/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ubuntu-shell-mcp": {
+      "command": "/PATH/TO/ubuntu-shell-mcp"
+    }
+  }
+}
+```
+
+> **Tip:** You can install the server binary to standard user path `~/.local/bin`:
+> ```bash
+> mkdir -p ~/.local/bin
+> cp packages/usm_server/ubuntu-shell-mcp ~/.local/bin/ubuntu-shell-mcp
+> ```
+> And configure `"command": "/home/<USERNAME>/.local/bin/ubuntu-shell-mcp"` (replace `<USERNAME>` with your Linux username).
+
+### Restart Claude Desktop
+Restart Claude Desktop to load the new server:
+```bash
+pkill -f claude-desktop
+claude-desktop &
+```
+
+---
+
+## Project Structure
+
+```
+├── DIAGNOSIS.md                     # Security & architectural diagnosis report
+├── README.md                        # Documentation
+├── claude_desktop_config.snippet.json# Sample Claude Desktop configuration
+├── pubspec.yaml                     # Workspace configuration
+├── pubspec.lock                     # Workspace lockfile
+├── packages/
+│   ├── usm_core/                    # Core library
+│   │   ├── lib/
+│   │   │   ├── approval_provider.dart # Zenity dialogs & display discovery
+│   │   │   ├── audit_logger.dart      # JSONL audit logger & fatigue tracker
+│   │   │   ├── command_validator.dart # 3-tier classification & rule engine
+│   │   │   ├── executor.dart          # Process execution & timeout killer
+│   │   │   └── path_resolver.dart     # Safe path resolution
+│   │   └── test/                    # Core unit tests
+│   └── usm_server/                  # MCP Server
+│       ├── bin/main.dart            # Native executable entrypoint
+│       ├── lib/
+│       │   ├── mcp_server.dart      # JSON-RPC 2.0 & MCP protocol handler
+│       │   └── transport.dart       # Stdio transport
+│       └── test/                    # Protocol & regression tests
+├── app/                             # Flutter companion management app
+│   ├── lib/main.dart                # Management dashboard UI
+│   └── test/widget_test.dart        # Flutter widget tests
+└── test/
+    └── integration/
+        └── stripped_env.sh          # Claude Desktop environment regression test
+```
+
+
 # ubuntu-shell MCP Server
 
 A hardened, local **Model Context Protocol (MCP)** server written in **Dart** with a companion **Flutter** desktop management application for **Ubuntu Linux** and **Claude Desktop**.
@@ -182,139 +414,3 @@ cd app
 flutter run -d linux
 ```
 
----
-
-## Installation & Setup
-
-### Automated 1-Command Install (Recommended)
-To compile and install both the MCP server and Flutter dashboard standalone into your system without needing root/sudo:
-```bash
-./install.sh
-```
-This automatically:
-1. Compiles the native server executable (`ubuntu-shell-mcp`)
-2. Builds the release Flutter desktop app (`ubuntu_shell_app`)
-3. Installs standalone files to `~/.local/share/ubuntu-shell-app/`
-4. Creates global user commands in `~/.local/bin/` (`ubuntu-shell-mcp` & `ubuntu-shell-app`)
-5. Adds a native desktop launcher in Ubuntu's Applications grid
-
-> **Standalone:** Once installed, the application runs 100% independently. You can safely move or delete the cloned repository!
-
-To uninstall anytime:
-```bash
-./uninstall.sh
-```
-
----
-
-## Building & Testing Manually
-
-### Prerequisites
-- Dart SDK `>= 3.5.0`
-- Flutter SDK (for companion app)
-- `zenity` (native Ubuntu package)
-
-### Install Dependencies
-```bash
-dart pub get
-```
-
-### Run Static Analysis
-```bash
-# Analyze core and server packages
-dart analyze packages/usm_core packages/usm_server
-
-# Analyze companion app
-flutter pub get --directory=app
-flutter analyze app/
-```
-
-### Run Unit & Integration Tests
-```bash
-# Run 136 core and server tests
-dart test packages/usm_core packages/usm_server
-
-# Run Flutter widget tests
-cd app && flutter test && cd ..
-```
-
-### Compile Server Binary
-```bash
-dart compile exe packages/usm_server/bin/main.dart -o packages/usm_server/ubuntu-shell-mcp
-```
-
-### Run Stripped-Environment Regression Test
-```bash
-./test/integration/stripped_env.sh
-```
-
----
-
-## Claude Desktop Configuration
-
-### Option 1: 1-Click Automatic Setup (Recommended for Non-Techies)
-If using the companion Flutter app:
-1. Open the app (`cd app && flutter run -d linux` or run the packaged application).
-2. Click the **Connect AI Client** tab in the sidebar.
-3. Click the **"Configure Claude Desktop (1-Click)"** button.
-4. The app automatically locates the binary, updates `~/.config/Claude/claude_desktop_config.json`, and verifies the setup with zero manual JSON editing required.
-
-### Option 2: Manual Configuration
-Alternatively, add the server directly to `~/.config/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "ubuntu-shell-mcp": {
-      "command": "/PATH/TO/ubuntu-shell-mcp"
-    }
-  }
-}
-```
-
-> **Tip:** You can install the server binary to standard user path `~/.local/bin`:
-> ```bash
-> mkdir -p ~/.local/bin
-> cp packages/usm_server/ubuntu-shell-mcp ~/.local/bin/ubuntu-shell-mcp
-> ```
-> And configure `"command": "/home/<USERNAME>/.local/bin/ubuntu-shell-mcp"` (replace `<USERNAME>` with your Linux username).
-
-### Restart Claude Desktop
-Restart Claude Desktop to load the new server:
-```bash
-pkill -f claude-desktop
-claude-desktop &
-```
-
----
-
-## Project Structure
-
-```
-├── DIAGNOSIS.md                     # Security & architectural diagnosis report
-├── README.md                        # Documentation
-├── claude_desktop_config.snippet.json# Sample Claude Desktop configuration
-├── pubspec.yaml                     # Workspace configuration
-├── pubspec.lock                     # Workspace lockfile
-├── packages/
-│   ├── usm_core/                    # Core library
-│   │   ├── lib/
-│   │   │   ├── approval_provider.dart # Zenity dialogs & display discovery
-│   │   │   ├── audit_logger.dart      # JSONL audit logger & fatigue tracker
-│   │   │   ├── command_validator.dart # 3-tier classification & rule engine
-│   │   │   ├── executor.dart          # Process execution & timeout killer
-│   │   │   └── path_resolver.dart     # Safe path resolution
-│   │   └── test/                    # Core unit tests
-│   └── usm_server/                  # MCP Server
-│       ├── bin/main.dart            # Native executable entrypoint
-│       ├── lib/
-│       │   ├── mcp_server.dart      # JSON-RPC 2.0 & MCP protocol handler
-│       │   └── transport.dart       # Stdio transport
-│       └── test/                    # Protocol & regression tests
-├── app/                             # Flutter companion management app
-│   ├── lib/main.dart                # Management dashboard UI
-│   └── test/widget_test.dart        # Flutter widget tests
-└── test/
-    └── integration/
-        └── stripped_env.sh          # Claude Desktop environment regression test
-```
