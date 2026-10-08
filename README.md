@@ -1,53 +1,28 @@
-### Download a prebuilt Linux release
+### Download and run a prebuilt Linux release
 
-You do **not** need to clone this repository or run `install.sh` to use a published
-release. The prebuilt archive contains both the desktop dashboard and the MCP server.
-These instructions are for 64-bit Ubuntu/Linux (`x86_64`).
+Download `ubuntu-shell-mcp-linux-x64.tar.gz` from the
+[GitHub Releases page](https://github.com/JBPATEL06/ubuntu-shell-mcp/releases), then
+extract and launch it:
 
-1. Download `ubuntu-shell-mcp-linux-x64.tar.gz` from the
-   [GitHub Releases page](https://github.com/JBPATEL06/ubuntu-shell-mcp/releases).
-   For example, download the latest release in a terminal with:
+```bash
+mkdir -p ~/Applications ~/Downloads
+curl -L "https://github.com/JBPATEL06/ubuntu-shell-mcp/releases/latest/download/ubuntu-shell-mcp-linux-x64.tar.gz" \
+  -o ~/Downloads/ubuntu-shell-mcp-linux-x64.tar.gz
+tar -xzf ~/Downloads/ubuntu-shell-mcp-linux-x64.tar.gz -C ~/Applications
+~/Applications/ubuntu-shell-mcp-linux-x64/ubuntu_shell_app
+```
 
-   ```bash
-   mkdir -p ~/Applications ~/Downloads
-   curl -L "https://github.com/JBPATEL06/ubuntu-shell-mcp/releases/latest/download/ubuntu-shell-mcp-linux-x64.tar.gz" \
-     -o ~/Downloads/ubuntu-shell-mcp-linux-x64.tar.gz
-   ```
+The archive includes the server. Keep it beside the app in the extracted folder.
+In the app, open **Connect AI** and select **Configure Claude Desktop (1-Click)**,
+then restart Claude Desktop. Approval dialogs require Zenity:
 
-   Or download the `.tar.gz` asset from the Releases page using your browser.
+```bash
+sudo apt install zenity
+```
 
-2. Extract the archive into `~/Applications`:
+#### Optional: Applications-menu shortcut
 
-   ```bash
-   tar -xzf ~/Downloads/ubuntu-shell-mcp-linux-x64.tar.gz -C ~/Applications
-   ```
-
-   This creates `~/Applications/ubuntu-shell-mcp-linux-x64/`.
-
-3. Start the dashboard:
-
-   ```bash
-   ~/Applications/ubuntu-shell-mcp-linux-x64/ubuntu_shell_app
-   ```
-
-   Keep the extracted folder in place. The dashboard starts the `ubuntu-shell-mcp`
-   executable bundled beside it; do not move or delete that server file.
-
-4. In the dashboard, open **Connect AI** and click **Configure Claude Desktop
-   (1-Click)**. This registers the bundled server in Claude Desktop's configuration.
-   If Ubuntu reports that Zenity is missing when a command needs approval, install it:
-
-   ```bash
-   sudo apt install zenity
-   ```
-
-5. Fully quit and restart Claude Desktop so it loads the new MCP server configuration.
-   On the next connection, Claude Desktop should show the Ubuntu Shell MCP tools.
-
-#### Optional: add Ubuntu Applications-menu shortcut
-
-To launch the dashboard with one click from Ubuntu's Applications menu, create a
-desktop entry. Run this after extracting the release to the path above:
+To launch the dashboard from Ubuntu's Applications menu, run:
 
 ```bash
 APP_PATH="$HOME/Applications/ubuntu-shell-mcp-linux-x64/ubuntu_shell_app"
@@ -64,22 +39,8 @@ EOF
 chmod +x "$HOME/.local/share/applications/ubuntu-shell-mcp.desktop"
 ```
 
-Open the Applications overview, search for **Ubuntu Shell MCP**, and launch it.
-The shortcut assumes you keep the release in `~/Applications/ubuntu-shell-mcp-linux-x64`;
-if you move the folder, update the `APP_PATH` and recreate the desktop entry.
-
-To remove this shortcut later:
-
-```bash
-rm "$HOME/.local/share/applications/ubuntu-shell-mcp.desktop"
-```
-
-If you prefer building from source and installing commands system-wide for your user,
-follow the source installation steps below instead. The release archive does not need
-the source repository or `install.sh`.
-
-New release archives are built and attached to GitHub Releases when a `v*` version
-tag is pushed.
+Search for **Ubuntu Shell MCP** in the Applications overview. The shortcut expects
+the release to remain in `~/Applications/ubuntu-shell-mcp-linux-x64`.
 
 ---
 
@@ -87,11 +48,7 @@ tag is pushed.
 
 ### Automated source install
 
-Use this option if you cloned/downloaded the source repository and want to build and
-install the app and server locally. If you downloaded a prebuilt release archive,
-follow [Download a prebuilt Linux release](#download-a-prebuilt-linux-release)
-instead; you do not need the source repository or this script. To compile and install
-both the MCP server and Flutter dashboard for your user without needing root/sudo:
+To build and install the app and server from the source repository without root/sudo:
 
 ```bash
 ./install.sh
@@ -118,7 +75,6 @@ To uninstall anytime:
 ### Prerequisites
 - Dart SDK `>= 3.5.0`
 - Flutter SDK (for companion app)
-- `zenity` (native Ubuntu package)
 
 ### Install Dependencies
 ```bash
@@ -158,19 +114,8 @@ dart compile exe packages/usm_server/bin/main.dart -o packages/usm_server/ubuntu
 
 ## Claude Desktop Configuration
 
-### Option 1: 1-Click Automatic Setup (Recommended for Non-Techies)
-If using the companion Flutter app:
-1. Open the dashboard from the Applications menu or run the packaged application.
-2. Click the **Connect AI Client** tab in the sidebar.
-3. Click the **"Configure Claude Desktop (1-Click)"** button.
-4. The app registers the detected server executable in
-   `~/.config/Claude/claude_desktop_config.json`; no manual JSON editing is needed.
-   For a downloaded release, keep the dashboard and `ubuntu-shell-mcp` together in
-   their extracted folder so the dashboard can locate the server.
-5. Fully quit and restart Claude Desktop to load the new configuration.
-
-### Option 2: Manual Configuration
-Alternatively, add the server directly to `~/.config/Claude/claude_desktop_config.json`:
+For manual setup, add the server to
+`~/.config/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -189,12 +134,7 @@ Alternatively, add the server directly to `~/.config/Claude/claude_desktop_confi
 > ```
 > And configure `"command": "/home/<USERNAME>/.local/bin/ubuntu-shell-mcp"` (replace `<USERNAME>` with your Linux username).
 
-### Restart Claude Desktop
-Restart Claude Desktop to load the new server:
-```bash
-pkill -f claude-desktop
-claude-desktop &
-```
+Restart Claude Desktop after changing its configuration.
 
 ---
 
@@ -413,4 +353,3 @@ To run the dashboard:
 cd app
 flutter run -d linux
 ```
-
